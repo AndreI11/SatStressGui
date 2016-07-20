@@ -382,13 +382,13 @@ class SatStressPanel(wx.Panel):
         sz = wx.BoxSizer(orient=wx.VERTICAL)
         
         self.nb = wx.Notebook(self)
-        self.slp = SatelliteLayersPanel(self.nb, model=kw['model'],controller = kw['controller'], paramName_ctrl_dict=kw['paramName_ctrl_dict'])
-        self.stp = StressListPanel(self.nb, model=kw['model'], controller = kw['controller'], paramName_ctrl_dict=kw['paramName_ctrl_dict'])
-        self.gp = GridCalcPanel(self.nb, model=kw['model'],controller = kw['controller'], paramName_ctrl_dict=kw['paramName_ctrl_dict'])
-        self.pp=  PointPanel(self.nb, model=kw['model'],controller = kw['controller'], paramName_ctrl_dict=kw['paramName_ctrl_dict'])
-        self.cp=  CycloidsPanel(self.nb, model=kw['model'],controller = kw['controller'], paramName_ctrl_dict=kw['paramName_ctrl_dict'])
+        self.slp = SatelliteLayersPanel(self.nb, model=kw['model'],controller = kw['controller'], view_parameters=kw['view_parameters'])
+        self.stp = StressListPanel(self.nb, model=kw['model'], controller = kw['controller'], view_parameters=kw['view_parameters'])
+        self.gp = GridCalcPanel(self.nb, model=kw['model'],controller = kw['controller'], view_parameters=kw['view_parameters'])
+        self.pp=  PointPanel(self.nb, model=kw['model'],controller = kw['controller'], view_parameters=kw['view_parameters'])
+        self.cp=  CycloidsPanel(self.nb, model=kw['model'],controller = kw['controller'], view_parameters=kw['view_parameters'])
 
-        self.spp = ScalarPlotPanel(self.nb, model=kw['model'],controller = kw['controller'], paramName_ctrl_dict=kw['paramName_ctrl_dict'])
+        self.spp = ScalarPlotPanel(self.nb, model=kw['model'],controller = kw['controller'], view_parameters=kw['view_parameters'])
 
         self.nb.AddPage(self.slp, u"Satellite")
         self.nb.AddPage(self.stp, u"Stresses")
@@ -423,7 +423,7 @@ class SatPanel(wx.Panel):
         super(SatPanel, self).__init__(*args)
         self.model = kw['model']
         self.controller = kw['controller']
-        self.view_parameters = kw['paramName_ctrl_dict']
+        self.view_parameters = kw['view_parameters']
 
     def make_text_controls_with_labels(self, parent, sz, parameters_d):
         for param_name, labl in parameters_d:
@@ -450,6 +450,11 @@ class SatPanel(wx.Panel):
             self.view_parameters[param_name] = wx.CheckBox(parent, label=d, name=param_name)
             sz.Add(self.view_parameters[param_name], flag=wx.ALIGN_CENTER_VERTICAL)
         
+    def make_text_control(self, parent, sz, param_name):
+        text = wx.TextCtrl(parent, style = wx.TE_PROCESS_ENTER, name = param_name)
+        self.view_parameters[param_name] = text
+        return text
+
     def make_combobox2_controls(self,parent, sz, parameter, description, choices):
         sz.Add(wx.StaticText(parent, label=description), flag=wx.ALIGN_CENTER_VERTICAL)
         self.view_parameters[parameter] = ComboBox2(parent, value=self.model.get_parameter(parameter).get_value(), choices=choices, style=wx.CB_DROPDOWN | wx.CB_READONLY, name= parameter)
@@ -646,70 +651,54 @@ class StressListPanel(SatPanel):
         
         
         
+           
         self.make_checkbox_controls(self, sz, [ ('Polar Wander', 'Polar Wander') ])
-                                                       
-        polarParams_sz = wx.BoxSizer(wx.VERTICAL)
-        # include ice thickness parameter for IST aka Ice Shell Thickening
-
-
-        polarlat_sz = wx.BoxSizer(orient=wx.HORIZONTAL)
-        polarlat_sz.AddSpacer(28)
-        self.lat_label = wx.StaticText(self, label=u'Initial Pole latitude [°]              ') #Not a very elegant spacing solution, and the boxes don't quite line up,
-        #but it's the simplest one that I could find (and the only one that worked).
-        polarlat_sz.Add(self.lat_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        polarlat_sz.Add(filler)
-        self.make_text_controls(self, polarlat_sz, [ ('PWthetaRi', 'PWthetaRi') ])
-        polarParams_sz.Add(polarlat_sz)
-        polarParams_sz.AddSpacer(5)
         
-        polarlong_sz = wx.BoxSizer(orient=wx.HORIZONTAL)
-        polarlong_sz.AddSpacer(28)
-        self.long_label = wx.StaticText(self, label=u'Initial Pole longitude [°]           ')
-        polarlong_sz.Add(self.long_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        polarlong_sz.Add(filler)
-        self.make_text_controls(self, polarlong_sz, [ ('PWphiRi', 'PWphiRi') ])
-        polarParams_sz.Add(polarlong_sz)
-        polarParams_sz.AddSpacer(5)
 
-        polarlatfinal_sz = wx.BoxSizer(orient=wx.HORIZONTAL)
-        polarlatfinal_sz.AddSpacer(28)
-        self.latfinal_label = wx.StaticText(self, label=u'Final Pole Latitude [°]              ')
-        polarlatfinal_sz.Add(self.latfinal_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        polarlatfinal_sz.Add(filler)
-        self.make_text_controls(self, polarlatfinal_sz, [ ('PWthetaRf', 'PWthetaRf') ])
-        polarParams_sz.Add(polarlatfinal_sz)
-        polarParams_sz.AddSpacer(5)
+        Polargrid = wx.FlexGridSizer(rows=5, cols=3, hgap=3, vgap=5)
+        self.Latitude_label = wx.StaticText(self, label=u'Latitude [°]')
+        self.Longitude_label = wx.StaticText(self, label=u'Longitude [°]')
+        self.Blank_label = wx.StaticText(self, label=u' ')
+        self.PoleInitial = wx.StaticText(self, label=u'Initial Pole Location')
+        self.PoleFinal = wx.StaticText(self, label=u'Final Pole Location')
+        self.TidalInitial = wx.StaticText(self, label=u'Initial Tidal Bulge Location')
+        self.TidalFinal = wx.StaticText(self, label=u'Final Tidal Bulge Location')
 
-        polarlongfinal_sz = wx.BoxSizer(orient=wx.HORIZONTAL)
-        polarlongfinal_sz.AddSpacer(28)
-        self.longfinal_label = wx.StaticText(self, label=u'Final Pole Longitude [°]           ')
-        polarlongfinal_sz.Add(self.longfinal_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        polarlongfinal_sz.Add(filler)
-        self.make_text_controls(self, polarlongfinal_sz, [ ('PWphiRf', 'PWphiRf') ])
-        polarParams_sz.Add(polarlongfinal_sz)
-        polarParams_sz.AddSpacer(5)
 
-        polarlattidal_sz = wx.BoxSizer(orient=wx.HORIZONTAL)
-        polarlattidal_sz.AddSpacer(28)
-        self.tlat_label = wx.StaticText(self, label=u'Initial Tidal Bulge latitude [°]   ')
-        polarlattidal_sz.Add(self.tlat_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        polarlattidal_sz.Add(filler)
-        self.make_text_controls(self, polarlattidal_sz, [ ('PWthetaTi', 'PWthetaTi') ])
-        polarParams_sz.Add(polarlattidal_sz)
-        polarParams_sz.AddSpacer(5)
+        def set_thetaRf(self, evt):
+            print 'balloony'
+            #self.sc.stresses_changed = True
+            self.model.stress_d['Polar Wander'].UserCoordinates.update_thetaRf(float(evt.GetString()))
 
-        polarlongtidal_sz = wx.BoxSizer(orient=wx.HORIZONTAL)
-        polarlongtidal_sz.AddSpacer(28)
-        self.tlong_label = wx.StaticText(self, label=u'Initial Tidal Bulge longitude [°]')
-        polarlongtidal_sz.Add(self.tlong_label, flag=wx.ALIGN_CENTER_VERTICAL)
-        polarlongtidal_sz.Add(filler)
-        self.make_text_controls(self, polarlongtidal_sz, [ ('PWphiTi', 'PWphiTi') ])
-        polarParams_sz.Add(polarlongtidal_sz)
-        
-    
-        # include thermal diffusivity parameter for IST
+       
 
-        sz.Add(polarParams_sz)
+        self.PWthetaRi = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        self.PWphiRi = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        #self.Bind(wx.EVT_TEXT, self.set_phiRi, self.PWphiRi)
+        self.PWthetaRf = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        #self.Bind(wx.EVT_TEXT, self.set_thetaRf, self.PWthetaRf)
+        self.PWphiRf = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        #self.Bind(wx.EVT_TEXT, self.set_phiRf, self.PWphiRf)
+        self.PWthetaTi = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        #self.Bind(wx.EVT_TEXT, self.set_thetaTi, self.PWthetaTi)
+        self.PWphiTi = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        #self.Bind(wx.EVT_TEXT, self.set_phiTi, self.PWphiTi)
+        self.PWthetaTf = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        #self.Bind(wx.EVT_TEXT, self.set_thetaTf, self.PWthetaTf)
+        self.PWphiTf = wx.TextCtrl(self, wx.ID_ANY, '', style=wx.TE_PROCESS_ENTER)
+        #self.Bind(wx.EVT_TEXT, self.set_phiTf, self.PWphiTf)
+
+
+        Polargrid.AddMany([
+            (self.Blank_label, 0, wx.ALL|wx.EXPAND), (self.Latitude_label, 0, wx.ALL|wx.EXPAND), (self.Longitude_label, 0, wx.ALL|wx.EXPAND),
+            (self.PoleInitial, 0, wx.ALL|wx.EXPAND), (self.PWthetaRi, 0, wx.ALL|wx.EXPAND), (self.PWphiRi, 0, wx.ALL|wx.EXPAND),
+            (self.PoleFinal, 0, wx.ALL|wx.EXPAND), (self.PWthetaRf, 0, wx.ALL|wx.EXPAND), (self.PWphiRf, 0, wx.ALL|wx.EXPAND),
+            (self.TidalInitial, 0, wx.ALL|wx.EXPAND), (self.PWthetaTi, 0, wx.ALL|wx.EXPAND), (self.PWphiTi, 0, wx.ALL|wx.EXPAND),
+            (self.TidalFinal, 0, wx.ALL|wx.EXPAND), (self.PWthetaTf, 0, wx.ALL|wx.EXPAND), (self.PWphiTf, 0, wx.ALL|wx.EXPAND)
+            ])
+
+
+        sz.Add(Polargrid)
 
         sz.AddSpacer(15)
         save_love_bt = wx.Button(self, label='Save Love numbers')
@@ -1430,14 +1419,15 @@ class ScalarPlotPanel(SatPanel):
         config.save_step(self.step, self.step_field)
     
     def plot(self):
-        try:
-            self.plot_no_draw()
-            self.draw()
+    
+        self.plot_no_draw()
+        self.draw()
+        '''
         except LocalError, e:
                 print self.model.grid_set() or self.model.satellite_set()
                 if not (self.model.grid_set() or self.model.satellite_set()):
                     error_dialog(self, str(e), e.title)
-                print 'heyff'
+
         except Exception, e:
             print e
             if self.model.grid_set() and self.model.satellite_set():
@@ -1447,8 +1437,9 @@ class ScalarPlotPanel(SatPanel):
                 else:
                     traceback.print_exc()
                     error_dialog(self, e.__class__.__name__ + ': ' + str(e), "Plot Error")
-        
+        '''
     def plot_no_draw(self):
+        print 'im here'
         self.grid = self.model.get_grid()
         self.calc = self.model.get_calc()
         self.basemap_ax = self.get_basemap_ax()
@@ -2091,16 +2082,15 @@ class ScalarPlotPanel(SatPanel):
 
     def on_move_in_plot(self, evt):
         if evt.inaxes:
-            try:
-                x,y = self.basemap_ax(evt.xdata, evt.ydata, inverse=True)
-                i = int((x - self.model.get_param_value('LON_MIN'))/(self.model.get_param_value('LON_MAX') - self.model.get_param_value('LON_MIN') + 1e-2)*self.model.get_param_value('LON_NUM')*self.n_interp)
-                j = int((y - self.model.get_param_value('LAT_MIN'))/(self.model.get_param_value('LAT_MAX') - self.model.get_param_value('LAT_MIN') + 1e-2)*self.model.get_param_value('LAT_NUM')*self.n_interp)
-                x1, y1, plot_field1 = self.plot_fields[self.get_grid_time()][self.sc.parameters['field']]
-                self.val_p['LON'].SetValue("%.2f" % x)
-                self.val_p['LAT'].SetValue("%.2f" % y)
-                self.val_p['VAL'].SetValue("%.2f" % (plot_field1[i,j]/1000.))
-            except:
-                pass
+        
+            x,y = self.basemap_ax(evt.xdata, evt.ydata, inverse=True)
+            i = int((x - self.model.get_param_value('LON_MIN'))/(self.model.get_param_value('LON_MAX') - self.model.get_param_value('LON_MIN') + 1e-2)*self.model.get_param_value('LON_NUM')*self.n_interp)
+            j = int((y - self.model.get_param_value('LAT_MIN'))/(self.model.get_param_value('LAT_MAX') - self.model.get_param_value('LAT_MIN') + 1e-2)*self.model.get_param_value('LAT_NUM')*self.n_interp)
+            x1, y1, plot_field1 = self.plot_fields[self.get_grid_time()][self.model.get_param_value('field')]
+            self.val_p['LON'].SetValue("%.2f" % x)
+            self.val_p['LAT'].SetValue("%.2f" % y)
+            self.val_p['VAL'].SetValue("%.2f" % (plot_field1[i,j]/1000.))
+       
 
     def colorbar(self, replot_colorbar):
         try:
@@ -2263,8 +2253,9 @@ class ScalarPlotPanel(SatPanel):
 
     def plot_grid_calc(self):
         replot_colorbar = False
-        
+        print self.model.get_param_value('field')
         if self.changed:
+            print 'h'
             self.orbit_pos = self.model.get_param_value('ORBIT_MIN', 0, int)
             self.nsr_pos = self.model.get_param_value('TIME_MIN', 0,float)
             self.hide_sliders()
@@ -2345,7 +2336,7 @@ class ScalarPlotPanel(SatPanel):
 			self.hide_nsr_slider()
 
 
-        if (self.model.get_param_value('Diurnal', False) or self.model.get_param_value('Obliquity', False)) \
+        if (self.model.get_param_value('Diurnal', False) or self.model.get_param_value('Obliquity', False)) or self.model.get_param_value('Polar Wander', False) \
 			and not self.model.get_param_value('ORBIT_MIN') == None and not self.model.get_param_value('ORBIT_MAX') == None \
 			and not self.model.get_param_value('ORBIT_NUM') == None:
 			print 'success'
@@ -2355,10 +2346,8 @@ class ScalarPlotPanel(SatPanel):
             self.hide_orbit_slider()
 
         
-        if self.model.get_param_value('ORBIT_MIN', False):
-            self.reveal_polar_slider()
-        else:
-            self.hide_polar_slider()
+    
+        self.hide_polar_slider() #For elastic model only need orbit
        	
 
     def hide_orbit_slider(self):
@@ -2547,9 +2536,9 @@ class View(wx.Frame):
     def __init__(self, parent,model, controller):
         wx.Frame.__init__(self, parent)
 
-        self.paramName_ctrl_dict = {}
+        self.view_parameters = {}
 
-        self.p = SatStressPanel(self,model=model,controller = controller, paramName_ctrl_dict = self.paramName_ctrl_dict)
+        self.p = SatStressPanel(self,model=model,controller = controller, view_parameters = self.view_parameters)
 
         self.SetSizer(wx.BoxSizer(wx.VERTICAL))
         self.GetSizer().Add(self.p, 1, wx.ALL|wx.EXPAND, 10)
@@ -2639,7 +2628,7 @@ class View(wx.Frame):
         self.p.SetFocus()
 
     def get_ctrl_obj(self,param_name):
-        return self.paramName_ctrl_dict[param_name]
+        return self.view_parameters[param_name]
 
     def onRights(self, evt):
         # indentation (lack thereof) necessary to prevent tab spaces every newline in source code
@@ -2900,7 +2889,7 @@ class BaseController:
         self.view = view
 
     def bind_all(self):
-        for param_name, ctrlObj in self.view.paramName_ctrl_dict.items():
+        for param_name, ctrlObj in self.view.view_parameters.items():
             if isinstance(ctrlObj, wx.TextCtrl):
                 if (self.model.get_parameter(param_name).get_param_type() in ('int', 'float')):  
                     ctrlObj.Bind(wx.EVT_CHAR, self.OnChar)
@@ -2923,7 +2912,7 @@ class BaseController:
 
     def OnText(self,event):
         if not event.GetEventObject().GetValue() == 'None':
-            self.model.set_parameter(event.GetEventObject().GetName(), event.GetEventObject().GetValue())
+            self.set_parameter(event.GetEventObject().GetName(),event.GetEventObject().GetValue())
             
 
     def OnText_for_lists(self, event, i):
@@ -2939,17 +2928,20 @@ class BaseController:
         ctrl = None
 
         if point >=0:   #for points tab only
-            ctrl = self.view.paramName_ctrl_dict[param_name][point]
+            ctrl = self.view.view_parameters[param_name][point]
             ctrl.SetValue(value)
 
         else:
             param = self.model.get_parameter(param_name)
             param.set_value(str(value))
-            if param.get_param_type() == 'cycloids':
+            if param.get_category() == 'cycloids':
                 self.cp_controller.cycloids_changed = True
+            elif param.get_category() in ['stresses_var', 'satellite_var', 'grid_var']:
+                print 'truit'
+                self.view.p.spp.changed = True
             try:
                 #update model
-                ctrl = self.view.paramName_ctrl_dict[param_name]
+                ctrl = self.view.view_parameters[param_name]
                 
                 #update view
                 if ( isinstance(ctrl, wx.TextCtrl) or isinstance(ctrl, wx.ComboBox) ):
@@ -3179,16 +3171,22 @@ class CycloidsPanelController(BaseController):
 class StressListController(BaseController):
     def __init__(self, model, view, stresses_panel):
         BaseController.__init__(self,model,view)
-        self.stresses_panel = stresses_panel
-        stresses_panel.Bind(wx.EVT_TEXT, self.set_h2Diurn, stresses_panel.h2Diurn)
-        stresses_panel.Bind(wx.EVT_TEXT, self.set_k2Diurn, stresses_panel.k2Diurn)
-        stresses_panel.Bind(wx.EVT_TEXT, self.set_l2Diurn, stresses_panel.l2Diurn)
-        stresses_panel.Bind(wx.EVT_CHECKBOX, self.useUserLove_diurn, stresses_panel.userDiurn)
-        stresses_panel.Bind(wx.EVT_TEXT, self.set_h2NSR, stresses_panel.h2NSR)
-        stresses_panel.Bind(wx.EVT_TEXT, self.set_k2NSR, stresses_panel.k2NSR)
-        stresses_panel.Bind(wx.EVT_TEXT, self.set_l2NSR, stresses_panel.l2NSR)
-        stresses_panel.Bind(wx.EVT_CHECKBOX, self.useUserLove_nsr, stresses_panel.userNSR)
-        
+        self.panel = stresses_panel
+        self.panel.Bind(wx.EVT_TEXT, self.set_h2Diurn, self.panel.h2Diurn)
+        self.panel.Bind(wx.EVT_TEXT, self.set_k2Diurn, self.panel.k2Diurn)
+        self.panel.Bind(wx.EVT_TEXT, self.set_l2Diurn, self.panel.l2Diurn)
+        self.panel.Bind(wx.EVT_CHECKBOX, self.useUserLove_diurn, self.panel.userDiurn)
+        self.panel.Bind(wx.EVT_TEXT, self.set_h2NSR,self.panel.h2NSR)
+        self.panel.Bind(wx.EVT_TEXT, self.set_k2NSR, self.panel.k2NSR)
+        self.panel.Bind(wx.EVT_TEXT, self.set_l2NSR, self.panel.l2NSR)
+        self.panel.Bind(wx.EVT_CHECKBOX, self.useUserLove_nsr, self.panel.userNSR)
+    
+        self.panel.Bind(wx.EVT_TEXT, self.set_phiRi, self.panel.PWphiRi)
+        self.panel.Bind(wx.EVT_TEXT, self.set_thetaRf, self.panel.PWthetaRf)
+        self.panel.Bind(wx.EVT_TEXT, self.set_phiRf, self.panel.PWphiRf)
+        self.panel.Bind(wx.EVT_TEXT, self.set_thetaTi, self.panel.PWthetaTi)
+        self.panel.Bind(wx.EVT_TEXT, self.set_thetaTf, self.panel.PWthetaTf)
+        self.panel.Bind(wx.EVT_TEXT, self.set_phiTf, self.panel.PWphiTf)
         
         self.view.get_ctrl_obj('Diurnal').Bind(wx.EVT_CHECKBOX, self.on_set_diurn)
         self.view.get_ctrl_obj('Nonsynchronous Rotation').Bind(wx.EVT_CHECKBOX, self.on_set_nsr)
@@ -3202,59 +3200,59 @@ class StressListController(BaseController):
     
     
     def disable_display_diurnlove(self):
-        for widg in [self.stresses_panel.h2, self.stresses_panel.k2, self.stresses_panel.l2,
-                     self.stresses_panel.h2Diurn, self.stresses_panel.k2Diurn, self.stresses_panel.l2Diurn,
-                     self.stresses_panel.userDiurn]:
+        for widg in [self.panel.h2, self.panel.k2, self.panel.l2,
+                     self.panel.h2Diurn, self.panel.k2Diurn, self.panel.l2Diurn,
+                     self.panel.userDiurn]:
             widg.Disable()
     
     def enable_display_diurnlove(self):
-        for widg in [self.stresses_panel.h2, self.stresses_panel.k2, self.stresses_panel.l2,
-                     self.stresses_panel.h2Diurn, self.stresses_panel.k2Diurn, self.stresses_panel.l2Diurn,
-                     self.stresses_panel.userDiurn]:
+        for widg in [self.panel.h2, self.panel.k2, self.panel.l2,
+                     self.panel.h2Diurn, self.panel.k2Diurn, self.panel.l2Diurn,
+                     self.panel.userDiurn]:
             widg.Enable()
     
     def disable_display_nsrlove(self):
-        for widg in [self.stresses_panel.h2, self.stresses_panel.k2, self.stresses_panel.l2,
-                     self.stresses_panel.h2NSR, self.stresses_panel.k2NSR, self.stresses_panel.l2NSR,
-                     self.stresses_panel.userNSR]:
+        for widg in [self.panel.h2, self.panel.k2, self.panel.l2,
+                     self.panel.h2NSR, self.panel.k2NSR, self.panel.l2NSR,
+                     self.panel.userNSR]:
             widg.Disable()
     
     def enable_display_nsrlove(self):
-        for widg in [self.stresses_panel.h2, self.stresses_panel.k2, self.stresses_panel.l2,
-                     self.stresses_panel.h2NSR, self.stresses_panel.k2NSR, self.stresses_panel.l2NSR,
-                     self.stresses_panel.userNSR]:
+        for widg in [self.panel.h2, self.panel.k2, self.panel.l2,
+                     self.panel.h2NSR, self.panel.k2NSR, self.panel.l2NSR,
+                     self.panel.userNSR]:
             widg.Enable()
     
     
     def disable_istparams(self):
-        for e in [self.stresses_panel.delta_label, self.view.get_ctrl_obj('delta_tc'),
-                  self.stresses_panel.diffusivity_label, self.view.get_ctrl_obj('diffusivity') ]:
+        for e in [self.panel.delta_label, self.view.get_ctrl_obj('delta_tc'),
+                  self.panel.diffusivity_label, self.view.get_ctrl_obj('diffusivity') ]:
             e.Disable()
     
     
     
     def enable_istparams(self):
         """Don't yet enable diffusivity as it is only rleevant for the viscoelastic case."""
-        for e in [self.stresses_panel.delta_label, self.view.get_ctrl_obj('delta_tc') ]:
+        for e in [self.panel.delta_label, self.view.get_ctrl_obj('delta_tc') ]:
             e.Enable()
     
     def disable_obliq(self):
-        for e in [self.stresses_panel.obliq_label, self.view.get_ctrl_obj('obliquity'),
-                  self.stresses_panel.periapsis_label, self.view.get_ctrl_obj('periapsis_arg') ]:
+        for e in [self.panel.obliq_label, self.view.get_ctrl_obj('obliquity'),
+                  self.panel.periapsis_label, self.view.get_ctrl_obj('periapsis_arg') ]:
             e.Disable()
     
     def enable_obliq(self):
-        for e in [self.stresses_panel.obliq_label, self.view.get_ctrl_obj('obliquity'),
-                  self.stresses_panel.periapsis_label, self.view.get_ctrl_obj('periapsis_arg') ]:
+        for e in [self.panel.obliq_label, self.view.get_ctrl_obj('obliquity'),
+                  self.panel.periapsis_label, self.view.get_ctrl_obj('periapsis_arg') ]:
             e.Enable()
     
     
     def enable_polar(self):
-        for e in [self.stresses_panel.lat_label, self.view.get_ctrl_obj('PWthetaRi'), self.stresses_panel.long_label, self.view.get_ctrl_obj('PWphiRi')]:
+        for e in [self.panel.Latitude_label, self.panel.PWthetaRi, self.panel.Longitude_label, self.panel.PWphiRi]:
             e.Enable()
     
     def disable_polar(self):
-        for e in [self.stresses_panel.lat_label, self.view.get_ctrl_obj('PWthetaRi'), self.stresses_panel.long_label, self.view.get_ctrl_obj('PWphiRi')]:
+        for e in [self.panel.Latitude_label, self.panel.PWthetaRi, self.panel.Longitude_label, self.panel.PWphiRi]:
             e.Disable()
     
     def on_set_diurn(self, evt):
@@ -3291,9 +3289,9 @@ class StressListController(BaseController):
         state = self.view.get_ctrl_obj('Polar Wander').GetValue()
         self.set_parameter('Polar Wander', state)
         if state:
-            self.stresses_panel.enable_polar()
+            self.enable_polar()
         else:
-            self.stresses_panel.disable_polar()
+            self.disable_polar()
     
     def parse_complex(self, string):
         real, imag = re.split(r'[+-]', string)
@@ -3303,47 +3301,85 @@ class StressListController(BaseController):
             return float(real), float(imag[:-1])
     
     def useUserLove_diurn(self, evt):
-        if self.stresses_panel.userDiurn.GetValue():
-            self.stresses_panel.sc.stress_d['Diurnal'].useUser = True
+        if self.panel.userDiurn.GetValue():
+            self.panel.model.stress_d['Diurnal'].useUser = True
         else:
-            self.stresses_panel.sc.stress_d['Diurnal'].useUser = False
+            self.panel.model.stress_d['Diurnal'].useUser = False
     
     def useUserLove_nsr(self, evt):
-        if self.stresses_panel.userDiurn:
-            self.stresses_panel.sc.stress_d['Nonsynchronous Rotation'].useUser = True
+        if self.panel.userDiurn:
+            self.model.stress_d['Nonsynchronous Rotation'].useUser = True
         else:
-            self.stresses_panel.sc.stress_d['Nonsynchronous Rotation'].useUser = False
+            self.model.stress_d['Nonsynchronous Rotation'].useUser = False
     
     def set_h2Diurn(self, evt):
-        self.sc.stresses_changed = True
-        self.sc.stress_d['Diurnal'].loveUser.update_h2(self.parse_complex(evt.GetString()))
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Diurnal'].loveUser.update_h2(self.parse_complex(evt.GetString()))
     
     def set_k2Diurn(self, evt):
-        self.sc.stresses_changed = True
-        self.sc.stress_d['Diurnal'].loveUser.update_k2(self.parse_complex(evt.GetString()))
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Diurnal'].loveUser.update_k2(self.parse_complex(evt.GetString()))
     
     def set_l2Diurn(self, evt):
-        self.sc.stresses_changed = True
-        self.sc.stress_d['Diurnal'].loveUser.update_l2(self.parse_complex(evt.GetString()))
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Diurnal'].loveUser.update_l2(self.parse_complex(evt.GetString()))
     
     def set_h2NSR(self, evt):
-        self.sc.stresses_changed = True
-        self.sc.stress_d['Nonsynchronous Rotation'].loveUser.update_h2(fself.parse_complex(evt.GetString()))
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Nonsynchronous Rotation'].loveUser.update_h2(fself.parse_complex(evt.GetString()))
     
     def set_k2NSR(self, evt):
-        self.sc.stresses_changed = True
-        self.sc.stress_d['Nonsynchronous Rotation'].loveUser.update_k2(self.parse_complex(evt.GetString()))
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Nonsynchronous Rotation'].loveUser.update_k2(self.parse_complex(evt.GetString()))
     
     def set_l2NSR(self, evt):
-        self.sc.stresses_changed = True
-        self.sc.stress_d['Nonsynchronous Rotation'].loveUser.update_l2(self.parse_complex(evt.GetString()))
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Nonsynchronous Rotation'].loveUser.update_l2(self.parse_complex(evt.GetString()))
+    
+    def set_thetaRi(self, evt):
+        #self.sc.stresses_changed = True
+        print 'balloony'
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_thetaRi(float(evt.GetString()))
+    
+    def set_phiRi(self, evt):
+        #self.sc.stresses_changed = True
+        print 'balloony'
 
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_phiRi(float(evt.GetString()))
+
+    def set_thetaRf(self, evt):
+        print 'balloony'
+
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_thetaRf(float(evt.GetString()))
+
+    def set_phiRf(self, evt):
+        print 'balloony'
+
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_phiRf(float(evt.GetString()))
+
+    def set_thetaTi(self, evt):
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_thetaTi(float(evt.GetString()))  
+
+    def set_phiTi(self, evt):
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_phiTi(float(evt.GetString()))
+
+    def set_thetaTf(self, evt):
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_thetaTf(float(evt.GetString()))
+
+    def set_phiTf(self, evt):
+        #self.sc.stresses_changed = True
+        self.model.stress_d['Polar Wander'].UserCoordinates.update_phiTf(float(evt.GetString()))
 
 class GridPanelController(BaseController):
     def __init__(self, model, view, grid_panel):
         BaseController.__init__(self,model,view)
         self.grid_panel = grid_panel
-        self.view.paramName_ctrl_dict['nsr_time'].SetMinSize((250, 10))
+        self.view.view_parameters['nsr_time'].SetMinSize((250, 10))
 
         self.grid_panel.sb.Bind(wx.EVT_BUTTON, self.on_save)
         self.grid_panel.lb.Bind(wx.EVT_BUTTON, self.on_load)
@@ -3630,8 +3666,8 @@ class PointPanelController(BaseController):
         else:
             for j in range(rows_to_add):
                 for p,d in self.panel.headers:
-                    self.view,paramName_ctrl_dict[p][-1].Destroy()
-                    del self.view.paramName_ctrl_dict[p][-1]
+                    self.view,view_parameters[p][-1].Destroy()
+                    del self.view.view_parameters[p][-1]
                     self.model.get_parameter[p].delete_last()
 
         self.panel.row_ctrl.SetValue(num_rows)
@@ -3817,266 +3853,7 @@ class ScalarPlotPanelController(BaseController):
         self.cb.draw_all()
         self.draw()
 
-    def on_move_in_plot(self, evt):
-        if evt.inaxes:
-            try:
-                x,y = self.basemap_ax(evt.xdata, evt.ydata, inverse=True)
-                i = int((x - self.model.get_param_value('LON_MIN'))/(self.model.get_param_value('LON_MAX') - self.model.get_param_value('LON_MIN') + 1e-2)*self.model.get_param_value('LON_NUM')*self.n_interp)
-                j = int((y - self.model.get_param_value('LAT_MIN'))/(self.model.get_param_value('LAT_MAX') - self.model.get_param_value('LAT_MIN') + 1e-2)*self.model.get_param_value('LAT_NUM')*self.n_interp)
-                x1, y1, plot_field1 = self.plot_fields[self.get_grid_time()][self.sc.parameters['field']]
-                self.val_p['LON'].SetValue("%.2f" % x)
-                self.val_p['LAT'].SetValue("%.2f" % y)
-                self.val_p['VAL'].SetValue("%.2f" % (plot_field1[i,j]/1000.))
-            except:
-                pass
 
-
-    def get_grid_time(self):
-        if self.orbit_pos > self.nsr_pos:
-            s = self.model.get_satellite()
-            print self.orbit_pos/360.0*s.orbit_period()
-            return self.orbit_pos/360.0*s.orbit_period()
-        else:
-            print self.orbit_pos/360.0*s.orbit_period()
-            return self.nsr_pos*seconds_in_year
-
-    def colorbar(self, replot_colorbar):
-        try:
-            self.cb
-            if replot_colorbar:
-                self.adjust_to_tight()
-                self.scp.figure.delaxes(self.cb.ax)
-                self.cb = self.scp.colorbar(self.im, ax=self.ax, format=self.tick_formatter)
-        except Exception, e:
-            self.adjust_to_tight()
-            self.cb = self.scp.colorbar(self.im, ax=self.ax, format=self.tick_formatter)
-
-    def consider_obliq_lons(self, lx, rx):
-        if self.sc.parameters.get('Obliquity'):
-            if int(round(lx)) % 90 == 0:
-                lx += 1
-            if int(round(rx)) % 90 == 0:
-                rx -= 1
-        return lx, rx
-
-    def consider_obliq_lats(self, ly, hy):
-        if self.sc.parameters.get('Obliquity'):
-            if int(round(ly)) % 90 == 0:
-                ly += 1
-            if int(round(hy)) % 90 == 0:
-                hy -= 1
-        return ly, hy
-
-    def consider_lons(self):
-        lx = self.model.get_param_value('LON_MIN')
-        rx = self.model.get_param_value('LON_MAX')
-        lx, rx = self.consider_obliq_lons(lx, rx)
-        if self.sc.parameters['projection'] == 'ortho' and rx - lx >= 180:
-            cx = int(round((lx + rx)/2))
-            lx = cx - 90 + 1
-            rx = cx + 90 - 1
-        return numpy.linspace(lx, rx, self.model.get_param_value('LON_NUM')*self.n_interp)
-
-    def consider_lats(self):
-        ly = self.model.get_param_value('LAT_MIN')
-        hy = self.model.get_param_value('LAT_MAX')
-        ly, hy = self.consider_obliq_lats(ly, hy)
-        proj = self.sc.parameters['projection']
-        if proj == 'spaeqd' and hy > 0 and ly < 0:
-            hy = 0
-        elif proj == 'npaeqd' and hy > 0 and ly < 0:
-            ly = 0
-        elif proj == 'ortho' and hy - ly >= 180:
-            cy = int(round((hy + ly)/2))
-            ly = cy - 90 + 1
-            hy = cy + 90 - 1
-        return numpy.linspace(ly, hy, self.model.get_param_value('LAT_NUM')*self.n_interp)
-
-    def prepare_plot_series(self):
-        self.plot_fields.clear()
-        self.plot_vectors.clear()
-        sat = self.sc.get_satellite()
-
-        lons = self.consider_lons()
-        lats  = self.consider_lats()
-        phis, thetas = numpy.meshgrid(lons, lats)
-        x,y = self.basemap_ax(phis, thetas)
-        i,j = numpy.meshgrid(
-            numpy.linspace(0, self.model.get_param_value('LON_NUM') - 1, self.model.get_param_value('LON_NUM')*self.n_interp),
-            numpy.linspace(0, self.model.get_param_value('LAT_NUM') - 1, self.model.get_param_value('LAT_NUM')*self.n_interp))
-
-        self.vector_mesh_lons, self.vector_mesh_lats = self.vector_meshes()
-
-        # monkey patching not to touch library code
-        def imshow(plot_field, cmap=None, **kw):
-            plot_field1 = scipy.ndimage.map_coordinates(plot_field, [i,j])
-            self.plot_fields[self.plot_time][self.plot_field] = (x, y, plot_field1)
-
-        def quiver(x, y, u, v, **kw):
-            self.plot_vectors[self.plot_time][self.plot_vector].append((x, y, u, v, kw))
-
-        _imshow = self.basemap_ax.imshow
-        self.basemap_ax.imshow = imshow
-        _quiver = self.basemap_ax.quiver
-        self.basemap_ax.quiver = quiver
-
-        orbit_period = sat.orbit_period()
-        o = self.sc.get_parameter(float, 'ORBIT_MIN', 0)
-        om = self.sc.get_parameter(float, 'ORBIT_MAX', 0)
-        n = self.sc.get_parameter(float, 'ORBIT_NUM', 0)
-        if n > 0:
-            s = (om - o)/n
-            while o <= om:
-                self.plot_time = o/360.0*orbit_period
-                self.prepare_plot_for_time()
-                o += s
-        nm = self.sc.get_parameter(float, 'TIME_MIN', 0)
-        s = self.sc.get_parameter(float, 'nsr_time', 0)
-        n = self.sc.get_parameter(int, 'TIME_NUM', 0)
-        for k in range(0, n+1):
-            self.plot_time = (s*k + nm)*seconds_in_year
-            self.prepare_plot_for_time()
-        self.basemap_ax.imshow = _imshow
-        self.basemap_ax.quiver = _quiver
-
-    def prepare_plot_for_time(self):
-        # we use self.plot_time instead of passing it as parameter 
-        # because it is used in redefined imshow and quiver in function above
-        self.plot_fields[self.plot_time] = {}
-        lon_min, lon_max = self.consider_obliq_lons(self.model.get_param_value('LON_MIN'),
-                self.model.get_param_value('LON_MAX'))
-        lat_min, lat_max = self.consider_obliq_lats(self.model.get_param_value('LAT_MIN'),
-                self.model.get_param_value('LAT_MAX'))
-        for self.plot_field in ['tens', 'comp', 'mean', 'diff']:
-            scalar_grid(
-                stresscalc = self.calc,
-                nlons = self.model.get_param_value('LON_NUM'),
-                nlats = self.model.get_param_value('LAT_NUM'),
-                min_lon = numpy.radians(lon_min),
-                max_lon = numpy.radians(lon_max),
-                min_lat = numpy.radians(lat_min),
-                max_lat = numpy.radians(lat_max),
-                time_t = self.plot_time,
-                field = self.plot_field,
-                basemap_ax = self.basemap_ax)
-        # self.plot_vector for same reasons as self.plot_time
-        self.plot_vector = 'principal'
-        self.plot_vectors[self.plot_time] = { self.plot_vector: [] }
-        vector_points1(stresscalc=self.calc,
-            lons = self.vector_mesh_lons,
-            lats = self.vector_mesh_lats,
-            time_t = self.plot_time,
-            plot_greater = True,
-            plot_lesser = True,
-            plot_comp = True,
-            plot_tens = True,
-            scale = self.scale()*vector_mult,
-            basemap_ax = self.basemap_ax)
-        for self.plot_vector in ['latitude', 'longitude', 'shear']:
-            self.plot_vectors[self.plot_time][self.plot_vector] = []
-            vector_points2(stresscalc=self.calc,
-                lons = self.vector_mesh_lons,
-                lats = self.vector_mesh_lats,
-                time_t = self.plot_time,
-                plot_norm_lat = (self.plot_vector == 'latitude'),
-                plot_norm_lon = (self.plot_vector == 'longitude'),
-                plot_shear =( self.plot_vector == 'shear'),
-                scale = self.scale()*vector_mult,
-                basemap_ax = self.basemap_ax)
-
-    def scale(self):
-        def max_abs(*v):
-            ''' finds the maximum of the absolute values of [vectors?] '''
-            # how diff from max(map(abs, v))?
-            return max(*map(abs, v))
-        return max_abs(self.ubound, self.lbound)
-
-    def plot_gradient(self):
-        try:
-            x, y, plot_field1 = self.plot_fields[self.get_grid_time()][self.sc.parameters['field']]
-            l = int(self.lbound) * 1000
-            u = int(self.ubound) * 1000
-            self.im = self.basemap_ax.pcolormesh(x, y, numpy.transpose(plot_field1), cmap='gist_rainbow_r', vmin=l, vmax=u)
-        except Exception, e:
-            print "%s: %s" % (e.__class__.__name__, e)
-
-    def plot_grid_calc(self):
-        replot_colorbar = False
-        
-        if self.changed:
-            self.orbit_pos = self.model.get_param_value('ORBIT_MIN', 0, int)
-            self.nsr_pos = self.model.get_param_value('TIME_MIN', 0,float)
-            #self.hide_sliders()
-            #self.show_needed_sliders()
-            self.prepare_plot()
-            self.changed = False
-            replot_colorbar = True
-            #elif self.sc.projection_changed:
-            #self.prepare_plot()
-            #self.sc.projection_changed = False
-        
-        if self.sc.parameters['field']:
-            self.plot_gradient()
-        '''
-        if self.sc.parameters['to_plot_principal_vectors']:
-            self.plot_principal_vectors()
-        if self.sc.parameters['to_plot_latitude_vectors'] \
-        or self.sc.parameters['to_plot_longitude_vectors'] \
-        or self.sc.parameters['to_plot_shear_vectors']:
-            self.plot_stress_vectors()
-        if self.sc.parameters['to_plot_lineaments']:
-            self.plot_lineaments()
-
-        if self.sc.parameters['to_plot_cycloids']:
-            self.plot_cycloids()
-        '''
-        self.colorbar(replot_colorbar)
-
-    def adjust_to_tight(self):
-        [lat0, lat1, lon0, lon1] = map(float, [ self.sc.parameters[x] for x in ['LAT_MIN', 'LAT_MAX', 'LON_MIN', 'LON_MAX']])
-        l = (lon1 - lon0)/(lat1 - lat0)*scale_bar_length
-        s = (l - scale_bar_length)/2
-        #self.scp.figure.subplots_adjust(left=scale_left - s, right=scale_left + scale_bar_length + s + 0.3*l)
-        self.scp.figure.subplots_adjust(left = scale_left - s,# - 0.03,
-            right = scale_left + scale_bar_length + 1.5*s + 0.1)
-
-    def vector_meshes(self):
-        lon_min, lon_max = self.consider_obliq_lons(self.model.get_param_value('LON_MIN'),
-                self.model.get_param_value('LON_MAX'))
-        lat_min, lat_max = self.consider_obliq_lats(self.model.get_param_value('LAT_MIN'),
-                self.model.get_param_value('LAT_MAX'))
-        vector_grid_lons  = numpy.linspace(
-            numpy.radians(lon_min),
-            numpy.radians(lon_max),
-            self.model.get_param_value('LON_NUM'))
-        vector_grid_lats  = numpy.linspace(
-            numpy.radians(lat_min),
-            numpy.radians(lat_max),
-            self.model.get_param_value('LAT_NUM'))
-        vector_mesh_lons, vector_mesh_lats = numpy.meshgrid(vector_grid_lons, vector_grid_lats)
-
-        vector_mesh_lons = numpy.ravel(vector_mesh_lons)
-        vector_mesh_lats = numpy.ravel(vector_mesh_lats)
-        return vector_mesh_lons, vector_mesh_lats
-
-    def plot_stress_vectors(self):
-        if self.sc.parameters['to_plot_latitude_vectors']:
-            for x, y, u, v, kw in self.plot_vectors[self.get_grid_time()]['latitude']:
-                self.basemap_ax.quiver(x, y, u, v, **kw)
-        if self.sc.parameters['to_plot_longitude_vectors']:
-            for x, y, u, v, kw in self.plot_vectors[self.get_grid_time()]['longitude']:
-                self.basemap_ax.quiver(x, y, u, v, **kw)
-        if self.sc.parameters['to_plot_shear_vectors']:
-            for x, y, u, v, kw in self.plot_vectors[self.get_grid_time()]['shear']:
-                self.basemap_ax.quiver(x, y, u, v, **kw)
-
-    def plot_principal_vectors(self):
-        for x, y, u, v, kw in self.plot_vectors[self.get_grid_time()]['principal']:
-            kw['scale'] = float(self.scale()*vector_mult)
-            self.basemap_ax.quiver(x, y, u, v, **kw)
-    
-    def mpl_color(self, color):
-        return map(lambda c: float(c)/255, color[0:3])
     
     def on_polar_updated(self, val):
         if self.updating:
@@ -4139,22 +3916,20 @@ class ScalarPlotPanelController(BaseController):
         # create sizers
     def generate_lins(self, evt):
         print 'generate_lins'
-        try:
-            if self.panel.plot_lins.GetValue():     # plot only if box is checked
-                self.l_count = int(self.l_count_tc.GetValue())
-            else:
-                self.l_count = 0
+        
+        if self.panel.plot_lins.GetValue():     # plot only if box is checked
+            self.l_count = int(self.l_count_tc.GetValue())
+        else:
+            self.l_count = 0
 
-            self.first_run = False
-            b = wx.BusyInfo(u"Performing calculations. Please wait.", self)
-            wx.SafeYield()
-            self.generated['data'] = self.lingen(self.l_count)
-            self.generated['lines'] = []
-            del b
-            self.plot()
-        except:
-            self.panel.l_count_tc.SetValue(str(self.l_count))
-
+        self.first_run = False
+        b = wx.BusyInfo(u"Performing calculations. Please wait.", self)
+        wx.SafeYield()
+        self.generated['data'] = self.lingen(self.l_count)
+        self.generated['lines'] = []
+        del b
+        self.plot()
+        
         self.plot_lineaments()
 
         print 'end generate_lins'
@@ -4168,28 +3943,24 @@ class ScalarPlotPanelController(BaseController):
             self.model.set_parameter('to_plot_cycloids', True)
             self.plot()
         else:
-            self.sc.parameters('to_plot_cycloids',False)
+            self.model.set_parameter('to_plot_cycloids', False)
             self.plot()
 
     #@into_hbox
-
-
-
-
     def save_orbit_series(self, dir='.'):
         b = wx.BusyInfo(u"Saving images. Please wait.", self)
         wx.SafeYield()
         old_orbit_pos = self.orbit_pos
-        sat = self.sc.get_satellite()
+        sat = self.model.get_satellite()
         orbit_period = sat.orbit_period()
-        o = self.sc.get_parameter(float, 'ORBIT_MIN', 0)
-        om = self.sc.get_parameter(float, 'ORBIT_MAX', 0)
-        n = self.sc.get_parameter(float, 'ORBIT_NUM', 0)
+        o = self.model.get_param_value('ORBIT_MIN', 0, float)
+        om = self.model.get_param_value('ORBIT_MAX', 0, float)
+        n = self.model.get_param_value('ORBIT_NUM', 0, float)
         s = (om - o)/n
         self.hide_orbit_controls()
 
         localtime = time.asctime(time.localtime(time.time()))
-        location = dir + "/" + self.sc.parameters['SYSTEM_ID']
+        location = dir + "/" + elf.model.get_param_value('SYSTEM_ID')
         directory = location + "/" + localtime
         if os.path.isdir(location):
             os.mkdir(directory)
@@ -4322,9 +4093,9 @@ class ScalarPlotPanelController(BaseController):
             # when thread is done, show GUI again
             # self.Show()
     def on_page_change(self):
-        self.changed = True
+        #self.panel.changed = True
         self.panel.plot()
-        
+        print 'hey'
 
 
     def OnChar(self,event):
@@ -4570,7 +4341,10 @@ class MainController(BaseController):
     def load_file(self,filename):
         f = open(filename)
         file_dict = nvf2dict(f)
-        self.pp_controller.set_num_rows(float(file_dict['point_rows']))
+        try:
+            self.pp_controller.set_num_rows(float(file_dict['point_rows']))
+        except:
+            pass
         for k,v in file_dict.items():
             if k == 'point_rows':
                 pass

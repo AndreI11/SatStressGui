@@ -113,20 +113,22 @@ class DataModel(object):
         'ORBIT_ECCENTRICITY': Parameter(category='satellite_var'),
         'ORBIT_SEMIMAJOR_AXIS': Parameter(category='satellite_var'),
         'NSR_PERIOD': Parameter(category='satellite_var'),
-        'Diurnal' : Parameter(category='stresses_var'),
-        'Nonsynchronous Rotation' : Parameter(category='stresses_var'),
-        'Obliquity' : Parameter(category='stresses_var'),
+        'Diurnal' : Parameter(param_type = 'bool', category='stresses_var'),
+        'Nonsynchronous Rotation' : Parameter(param_type = 'bool', category='stresses_var'),
+        'Obliquity' : Parameter(param_type = 'bool', category='stresses_var'),
         'periapsis_arg' : Parameter(category='stresses_var'),
-        'obliquity' : Parameter(category='stresses_var'),
-        'Ice Shell Thickening' : Parameter(category='stresses_var'),
+        'obliquity' : Parameter(param_type = 'bool', category='stresses_var'),
+        'Ice Shell Thickening' : Parameter(param_type = 'bool', category='stresses_var'),
         'delta_tc' : Parameter(category='stresses_var'),
         'diffusivity' : Parameter(category='stresses_var'),
-        'Polar Wander' : Parameter(category='stresses_var'),
+        'Polar Wander' : Parameter(param_type = 'bool', category='stresses_var'),
         'PWthetaRi' : Parameter(category='stresses_var'),
         'PWphiRi' : Parameter(category='stresses_var'),
         'PWthetaRf' : Parameter(category='stresses_var'),
         'PWphiRf' : Parameter(category='stresses_var'),
         'PWthetaTi' : Parameter(category='stresses_var'),
+        'PWthetaTf' : Parameter(category='stresses_var'),
+        'PWphiTf' : Parameter(category='stresses_var'),
         'PWphiTi' : Parameter(category='stresses_var'),
         'MIN' : Parameter(category='grid_var'),
         'MAX' : Parameter(category='grid_var'),
@@ -227,25 +229,17 @@ class DataModel(object):
 
 
     def calculate_stress(self):
-        try:
-            self.calc = StressCalc(self.get_stresses())
-            self.satellite_changed = self.grid_changed = self.stresses_changed = False
-            self.calc_changed = True
-            return self.calc
-        except Exception, e:
-            print e.__class__.__name__, str(e)
-            if self.satellite and not self.stresses:
-                traceback.print_exc()
-                raise LocalError(u'Stresses are not defined', u'Calc Error')
-            else:
-                raise LocalError(str(e), u'Calc Error')
-                traceback.print_exc()
+        
+        self.calc = StressCalc(self.get_stresses())
+        self.satellite_changed = self.grid_changed = self.stresses_changed = False
+        self.calc_changed = True
+        return self.calc
+        
 
 
     # updates calculations
     def get_calc(self, k=None):
-        if self.changed() or self.calc is None:
-            self.calculate()
+        self.calculate()
         return self.calc
 
     # calculates tensor stresses
@@ -267,9 +261,12 @@ class DataModel(object):
     def get_stresses(self):
     	if not self.satellite:
     		self.make_satellite()
-        if not self.stresses:
-            self.stresses = [ self.stress_d[v](self.satellite) for v in filter(lambda v: DataModel.parameters[v].get_value(), self.stress_d.keys()) ]
-            
+    	self.stresses = []
+    	for param_name in self.stress_d.keys():
+    		if self.get_param_value(param_name):
+    			self.stresses.append(self.stress_d[param_name](self.satellite))
+
+        print 'stresses:', self.stresses
         return self.stresses
     def make_satellite(self):
 
@@ -288,15 +285,13 @@ class DataModel(object):
         self.grid = satstress.gridcalc.Grid(self.satellite,grid_dict)
 
     def calculate(self):
-    
         self.calc = StressCalc(self.get_stresses())
         self.calc_changed = True
         return self.calc
         
     def get_calc(self):
-        if self.calc is None:
-            self.calculate()
-        return self.calc
+    	return self.calculate()
+        
 
 
     def get_grid(self):
